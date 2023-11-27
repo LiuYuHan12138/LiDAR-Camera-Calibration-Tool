@@ -5,11 +5,13 @@ import multiprocessing
 import open3d as o3d
 import matplotlib.pyplot as plt
 import random
-from tf.transformations import euler_from_matrix
 
-PKG_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+TOOL_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 DATA_PATH = 'data'
 RESULT_PATH = 'result'
+
+IMG_NAME = 'test.png'
+PCD_NAME = 'test.pcd'
 
 CAMERA_MATRIX = np.array([[1085.8801, 0, 1255.37351],
                           [0, 1087.46558, 747.00803],
@@ -22,13 +24,13 @@ def save_data(data, filename, folder):
     if not len(data): return
 
     # Handle filename
-    filename = os.path.join(PKG_PATH, os.path.join(folder, filename))
+    filename = os.path.join(TOOL_PATH, os.path.join(folder, filename))
     
     # Create folder
     try:
-        os.makedirs(os.path.join(PKG_PATH, folder))
+        os.makedirs(os.path.join(TOOL_PATH, folder))
     except OSError:
-        if not os.path.isdir(os.path.join(PKG_PATH, folder)): raise
+        if not os.path.isdir(os.path.join(TOOL_PATH, folder)): raise
 
     # Save points data
     if os.path.isfile(filename):
@@ -38,7 +40,7 @@ def save_data(data, filename, folder):
 
 def extract_points_2D(path):
 
-    print(PKG_PATH)
+    print(TOOL_PATH)
     
     img = cv2.imread(path)
     disp = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2RGB)
@@ -77,20 +79,17 @@ def extract_points_2D(path):
         print('PnP Requires minimum 6 points')
         return
     
-    # save_data(corners, 'img_corners.npy', RESULT_PATH)
-    
-
 
 def extract_points_3D(path):
     pcd = o3d.io.read_point_cloud(path)
-    intensity = np.asarray(pcd.colors)[:, 0]
+    # intensity = np.asarray(pcd.colors)[:, 0]
 
 
-    # 设置点云颜色
+    # setting pointcloud color
     pcd.paint_uniform_color([1.0, 1.0, 1.0]) 
     
     if len(np.asarray(pcd.points)) > 5:
-        print('PCL points available: %d', len(np.asarray(pcd.points)))
+        print('PCL points available: ', len(np.asarray(pcd.points)))
     else:
         print('Very few PCL points available in range')
         return
@@ -99,9 +98,9 @@ def extract_points_3D(path):
     vis.create_window(width=800, height=600, left=500, top = 200)
     vis.add_geometry(pcd)
 
-    # 获取渲染选项并设置背景色为黑色
+    # setting backgroud black 
     render_option = vis.get_render_option()
-    render_option.background_color = np.asarray([0, 0, 0])  # 设置为黑色
+    render_option.background_color = np.asarray([0, 0, 0])  
     render_option.point_size = 1.5
 
 
@@ -123,7 +122,7 @@ def extract_points_3D(path):
 
 
 def calibrate(points2D = None, points3D = None):
-    folder = os.path.join(PKG_PATH, RESULT_PATH)
+    folder = os.path.join(TOOL_PATH, RESULT_PATH)
     if points2D is None: points2D = np.load(os.path.join(folder, 'img_corners.npy'))
     if points3D is None: points3D = np.load(os.path.join(folder, 'pcl_corners.npy'))
 
@@ -133,18 +132,16 @@ def calibrate(points2D = None, points3D = None):
         print('PnP Requires minimum 6 points')
         return
     
-    
-    
     success, rotation_vector, translation_vector = cv2.solvePnP(points3D, points2D, 
         CAMERA_MATRIX, DIST_COEFFS)
     
     rotation_matrix = cv2.Rodrigues(rotation_vector)[0]
-    euler = euler_from_matrix(rotation_matrix)
+    # euler = cv2.RQDecomp3x3(rotation_matrix)[0]
     
     if(success):
         print('Rotation vector:', rotation_vector.T)
         print('Rotation Matrix:', rotation_matrix)
-        print('euler:', euler)
+        # print('euler:', euler)
         print('Translation Vector:', translation_vector.T)
 
         with open(os.path.join(folder, 'extrinsic.txt'), 'a') as file:
@@ -152,11 +149,11 @@ def calibrate(points2D = None, points3D = None):
             file.write('\n')
             np.savetxt(file, rotation_matrix, header='Rotation Matrix:', fmt='%f',  comments='')
             file.write('\n')
-            np.savetxt(file, euler, header='euler:', fmt='%f', comments='')
-            file.write('\n')
+            # np.savetxt(file, euler, header='euler:', fmt='%f', comments='')
+            # file.write('\n')
             np.savetxt(file, translation_vector.T, header='Translation Vector:', fmt='%f', comments='')
         
-        np.savez(os.path.join(folder, 'extrinsics.npz'), r = rotation_vector.T, R=rotation_matrix, euler=euler, t=translation_vector.T, allow_pickle=True)
+        np.savez(os.path.join(folder, 'extrinsics.npz'), r = rotation_vector.T, R=rotation_matrix, t=translation_vector.T, allow_pickle=True)
     
     else:
         print("Failed to solve pnp")
@@ -164,11 +161,10 @@ def calibrate(points2D = None, points3D = None):
 
 if __name__ == '__main__':
     
-    image_path = os.path.join(PKG_PATH, os.path.join(DATA_PATH, 'test.png'))
-    pointcloud_path = os.path.join(PKG_PATH, os.path.join(DATA_PATH, 'test.pcd'))
+    image_path = os.path.join(TOOL_PATH, os.path.join(DATA_PATH, IMG_NAME))
+    pointcloud_path = os.path.join(TOOL_PATH, os.path.join(DATA_PATH, PCD_NAME))
     
     # pick points
-
     img_p = multiprocessing.Process(target=extract_points_2D, args= [image_path])
     pcl_p = multiprocessing.Process(target=extract_points_3D, args= [pointcloud_path])
     img_p.start(); 
@@ -177,6 +173,5 @@ if __name__ == '__main__':
     pcl_p.join()
     
 	# calibrate
-
     calibrate()
 
