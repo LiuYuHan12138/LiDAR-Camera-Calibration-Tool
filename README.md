@@ -17,7 +17,7 @@ $ git clone https://github.com/pengpengfei97/LiDAR-Camera-Calibration-Tool.git
 ```
 
 ## Data
-- **Solid-state LiDAR:** Save an image file and a pointcloud file whith the same timestamp and place them in the data folder.
+- **Solid-state LiDAR:** Get an image file and a pointcloud file with the same timestamp and save them in the data folder.
 - **Mechanical LiDAR:** Cause the sparsity of pointcloud generted by mechanical LiDAR, you can use SLAM algorithms to generate dense pointcloud before calibrate. Then save the image and pointcloud files in the data folder. (Note that the coordinate system of the dense pointcloud should be based on the timestamp when the image saved.)
 
 ## Usage 
