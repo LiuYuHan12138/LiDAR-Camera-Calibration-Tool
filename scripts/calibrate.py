@@ -10,14 +10,15 @@ TOOL_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 DATA_PATH = 'data'
 RESULT_PATH = 'result'
 
-IMG_NAME = 'test.png'
+IMG_NAME = 'test.png'  # modify
 PCD_NAME = 'test.pcd'
 
 CAMERA_MATRIX = np.array([[1085.8801, 0, 1255.37351],
                           [0, 1087.46558, 747.00803],
                           [0, 0, 1]], dtype=np.float32)
-
+#相机内参设置
 DIST_COEFFS = np.array([-0.084180, 0.000464, 0.000143, -0.001763, 0.000000], dtype=np.float32)
+#畸变参数设置
 
 def save_data(data, filename, folder):
     # Empty data
@@ -45,7 +46,7 @@ def extract_points_2D(path):
     img = cv2.imread(path)
     disp = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2RGB)
     
-	# Setup matplotlib GUI
+	# 用matplotlib建立GUI窗口
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_title('Select 2D Image Points')
@@ -60,14 +61,14 @@ def extract_points_2D(path):
         y = event.ydata
         if (x is None) or (y is None): return
 
-        # Display the picked point
+        # 展示被选择的点
         corners.append((x, y))
         print("IMG pick:", str(corners[-1]))
 
         ax.plot(x, y, 'o', color=colors[random.randint(0, 9)], label='Points')
         ax.figure.canvas.draw_idle()
 
-	# Display GUI
+	# 展示 GUI
     fig.canvas.mpl_connect('button_press_event', onclick)
     plt.show()
 
@@ -85,7 +86,7 @@ def extract_points_3D(path):
     # intensity = np.asarray(pcd.colors)[:, 0]
 
 
-    # setting pointcloud color
+    # 设置点云颜色
     pcd.paint_uniform_color([1.0, 1.0, 1.0]) 
     
     if len(np.asarray(pcd.points)) > 5:
@@ -164,7 +165,7 @@ if __name__ == '__main__':
     image_path = os.path.join(TOOL_PATH, os.path.join(DATA_PATH, IMG_NAME))
     pointcloud_path = os.path.join(TOOL_PATH, os.path.join(DATA_PATH, PCD_NAME))
     
-    # pick points
+    # 选点
     img_p = multiprocessing.Process(target=extract_points_2D, args= [image_path])
     pcl_p = multiprocessing.Process(target=extract_points_3D, args= [pointcloud_path])
     img_p.start(); 
@@ -172,6 +173,6 @@ if __name__ == '__main__':
     img_p.join(); 
     pcl_p.join()
     
-	# calibrate
+	# 标定
     calibrate()
 
